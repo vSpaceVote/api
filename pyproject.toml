@@ -1,13 +1,6 @@
 [tool.poetry]
 name = "api"
-license = "MIT"
-authors = ["Microsoft Corporation <electionguard@microsoft.com>"]
-license = "MIT"
-authors = ["Microsoft Corporation <electionguard@microsoft.com>"]
-readme = "README.md"
-homepage = "https://microsoft.github.io/electionguard-api-python/"
-repository = "https://github.com/microsoft/electionguard-api-python"
-documentation = "https://electionguard-api-python.readthedocs.io/"
+
 
 [tool.poetry.dependencies]
 python = "~=3.9.5"
