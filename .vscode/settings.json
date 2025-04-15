@@ -28,5 +28,7 @@
   },
   "editor.formatOnSave": true,
   "python.venvPath": ".venv",
-  "python.pythonPath": ".venv/bin/python"
+  "python.pythonPath": ".venv/bin/python",
+  "IDX.aI.enableInlineCompletion": true,
+  "IDX.aI.enableCodebaseIndexing": true
 }
