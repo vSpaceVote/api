@@ -1,0 +1,14 @@
+site_name: ElectionGuard Web Api
+# site_description:
+site_author: Microsoft
+# google_analytics:
+# remote_branch: for gh-deploy to GithubPages
+# remote_name: for gh-deploy to Github Pages
+copyright: "© Microsoft 2020"
+docs_dir: "docs"
+site_url: ""
+use_directory_urls: false
+repo_url: https://github.com/microsoft/electionguard-api-python/
+nav:
+  - Home: index.md
+theme: readthedocs

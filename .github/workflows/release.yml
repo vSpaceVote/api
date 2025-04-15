@@ -1,0 +1,108 @@
+name: Release Build
+
+on:
+  milestone:
+    types: [closed]
+  repository_dispatch:
+    types: [milestone_closed]
+
+env:
+  PYTHON_VERSION: 3.9
+
+jobs:
+  code_analysis:
+    name: Code Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Change Directory
+        run: cd ${{ github.workspace }}
+      - name: Setup Environment
+        run: make environment
+      - name: Lint
+        run: make lint
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: python
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v1
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
+
+  linux_check:
+    name: Linux Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Change Directory
+        run: cd ${{ github.workspace }}
+      - name: Setup Environment
+        run: make environment
+      - name: Run Integration Tests
+        run: make test-integration
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [code_analysis, linux_check]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Change Directory
+        run: cd ${{ github.workspace }}
+      - name: Poetry Install
+        run: pip install poetry
+      - name: Get Version
+        run: echo "name=PACKAGE_VERSION::$(echo $VERSION | poetry version | cut -c23-27)" >> $GITHUB_ENV
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.PACKAGE_VERSION }}
+          release_name: Release ${{ env.PACKAGE_VERSION }}
+          draft: false
+          prerelease: false
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: Build and Push to DockerHub
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            electionguard/electionguard-web-api:latest
+            electionguard/electionguard-web-api:${{ env.PACKAGE_VERSION }}
+      - name: Verify Docker Hub image
+        run: echo ${{ steps.docker_build.outputs.digest }}
+      - name: Push to GitHub Packages
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: docker.pkg.github.com
+          repository: microsoft/electionguard-web-api/electionguard-web-api
+          tag_with_ref: true
+      - name: Deploy Github Pages
+        run: make docs-deploy-ci
